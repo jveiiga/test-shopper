@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: test_shopper_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password  
+      POSTGRES_DB: shopper
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  back-end:
+    build:
+      context: ./back-end
+      dockerfile: Dockerfile
+    container_name: node_app
+    env_file: 
+      - ./.env
+    environment:
+      DATABASE_URL: postgres://user:password@db:5432/shopper
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - app_network
+    command: sh -c "npm run migrate-and-seed && npm start"
+
+  front-end:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    container_name: react_app
+    env_file: 
+      - ./.env
+    environment:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+    ports:
+      - "80:80"
+    networks:
+      - app_network
+
+volumes:
+  postgres_data:
+
+networks:
+  app_network:
+
